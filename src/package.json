@@ -1,0 +1,29 @@
+{
+  "title": "Cache Disabler",
+  "name": "cachedisabler",
+  "version": "1.1.0",
+  "description": "A simple add-on which provides a button to completely disable (and re-enable) the cache with a single click.",
+  "main": "index.js",
+  "author": "Simon Wiles",
+  "engines": {
+    "firefox": ">=38.0a1"
+  },
+  "license": "MPL-2.0",
+  "preferences": [{
+    "name": "cachesToDisable",
+    "type": "menulist",
+    "title": "Caches to Disable",
+    "value": 0,
+    "options": [{
+      "value": "0",
+      "label": "Disk and In-Memory"
+    }, {
+      "value": "1",
+      "label": "Disk Only"
+    }, {
+      "value": "2",
+      "label": "In-Memory Only"
+    }]
+  }]
+
+}
