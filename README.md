@@ -1,7 +1,7 @@
 #Cache Disabler
-A simple FireFox add-on which provides a button to completely disable (and re-enable) the cache with a single click.
+A simple FireFox add-on which provides a button to completely disable (and re-enable) disk and/or in-memory caches with a single click.
 
-This add-on is intended to make it easy to disable both the disk and in the in-memory caches, and to serve as an indicator of the cache state, so you can see at a glance whether the cache is on or off.
+This add-on is intended to make it easy to disable both the disk and in in-memory caches, and to serve as an indicator of the cache state, so you can see at a glance whether the cache is on or off.  Following a user request, version 1.2 includes the option to remember the state of the managed caches across sessions.
 
 It is inspired by the "Cache Killer" extension available for Google Chrome. There is the "CacheToggle" add-on for FireFox which appears to address a similar need, but which doesn't work without the addon bar which was removed in FF 29.
 

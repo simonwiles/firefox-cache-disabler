@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  *
- * Copyright 2015 Simon Wiles
+ * Copyright 2015-6 Simon Wiles
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,10 +15,21 @@
 (function(){
 
   var buttons = require("sdk/ui/button/action"),
+
+      // for getting and setting Firefox's internal preferences
       prefsService = require("sdk/preferences/service"),
+
+      // set-up event to monitor for changes to Firefox's internal cache preferences
       { PrefsTarget } = require("sdk/preferences/event-target"),
       cachePrefsTarget = new PrefsTarget({ branchName: "browser.cache." }),
+
+      // for dealing with the add-on's own preferences
       simplePrefs = require("sdk/simple-prefs"),
+
+      // for persistence across sessions
+      ss = require("sdk/simple-storage"),
+
+      // some constants
       icons = {
         false: ["./disk_and_memory-light.svg", "./disk-light.svg", "./memory-light.svg"],
         true: ["./disk_and_memory-dark.svg", "./disk-dark.svg", "./memory-dark.svg"],
@@ -35,11 +46,6 @@
       ],
       cachesToDisable = cachePrefs[simplePrefs.prefs.cachesToDisable];
 
-  exports.onUnload = function(reason) {
-    // reset built-in prefs to defaults on unload.
-    cachePrefsTarget.off();
-    resetAllPrefs();
-  };
 
   function themeIsDark() {
     // This is unsatisfactory, but better than nothing.
@@ -58,36 +64,54 @@
 
   function resetAllPrefs() {
     cachePrefs[0].forEach(function(cachePref) { prefsService.reset(cachePref); });
+    updateButtonBadge();
   }
 
-  function updateButtonState() {
-    button.cacheOn = cachesToDisable.every(cachePref => prefsService.get(cachePref));
-    button.badge = (button.cacheOn) ? "" : "off";
-    button.icon = icons[themeIsDark()][simplePrefs.prefs.cachesToDisable];
+  function updateButtonBadge() {
+    button.badge = (ss.storage.cachesDisabled) ? "off" : "";
+  }
+
+  function setCaches(state) {
+    cachesToDisable.forEach(function(cachePref) { prefsService.set(cachePref, !state); });
   }
 
   var button = buttons.ActionButton({
     id: "cache-toggle-button",
     label: "Cache Disabler: " + labels[simplePrefs.prefs.cachesToDisable],
     icon: icons[themeIsDark()][simplePrefs.prefs.cachesToDisable],
-    cacheOn: true,
-    onClick: function(state) {
-      var enable = !button.cacheOn;
-      cachesToDisable.forEach(function(cachePref) { prefsService.set(cachePref, enable); });
+    onClick: function() {
+      ss.storage.cachesDisabled = !ss.storage.cachesDisabled;
+      setCaches(ss.storage.cachesDisabled);
     }
   });
 
+  exports.onUnload = function(reason) {
+    // reset built-in prefs to defaults on unload.
+    cachePrefsTarget.off();
+    resetAllPrefs();
+  };
+
   // monitor changes to cache states (which may or may not have been instigated by this add-on)
-  cachePrefsTarget.on("", updateButtonState);
+  // note: this will fire twice if both caches (disk and in-memory) are being managed
+  cachePrefsTarget.on("", updateButtonBadge);
 
   // monitor changes to this add-on's own prefs
   simplePrefs.on("cachesToDisable", function() {
     cachesToDisable = cachePrefs[simplePrefs.prefs.cachesToDisable];
     button.label = "Cache Disabler: " + labels[simplePrefs.prefs.cachesToDisable];
+    button.icon = icons[themeIsDark()][simplePrefs.prefs.cachesToDisable];
+    ss.storage.cachesDisabled = false;
     resetAllPrefs();
   });
 
+  if (!simplePrefs.prefs.rememberCacheState || ss.storage.cachesDisabled === undefined) {
+    // read current state of Firefox cache preferences, and use that value
+    ss.storage.cachesDisabled = cachesToDisable.every(cachePref => !prefsService.get(cachePref));
+  } else {
+    setCaches(ss.storage.cachesDisabled);
+  }
+
   // configure the button in the correct state
-  updateButtonState();
+  updateButtonBadge();
 
 })();
